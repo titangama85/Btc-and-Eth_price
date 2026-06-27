@@ -2,8 +2,8 @@ name: Update Crypto Prices
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # هر ۶ ساعت یک‌بار اتوماتیک آپدیت می‌شه
-  workflow_dispatch: # دکمه اجرای دستی توی تب Actions
+    - cron: '0 */6 * * *' # Runs every 6 hours
+  workflow_dispatch: # Allows manual trigger from the Actions tab
 
 jobs:
   update-prices:
@@ -16,19 +16,15 @@ jobs:
 
     - name: Fetch BTC and ETH Prices
       run: |
-        # گرفتن قیمت‌ها از API بایننس
-        btc_price=$(curl -s "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT" | jq -r '.price')
-        eth_price=$(curl -s "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT" | jq -r '.price')
+        # Fetching from Coinbase API to avoid GitHub Action IP blocks
+        btc_price=$(curl -s "https://api.coinbase.com/v2/prices/BTC-USD/spot" | jq -r '.data.amount // "N/A"')
+        eth_price=$(curl -s "https://api.coinbase.com/v2/prices/ETH-USD/spot" | jq -r '.data.amount // "N/A"')
         
-        # رند کردن قیمت‌ها تا دو رقم اعشار
-        btc_formatted=$(printf "%.2f" $btc_price)
-        eth_formatted=$(printf "%.2f" $eth_price)
-        
-        # نوشتن اطلاعات توی فایل
+        # Write data to file
         echo "=== Crypto Prices ===" > crypto_prices.txt
-        echo "Last Updated: $(date)" >> crypto_prices.txt
-        echo "Bitcoin (BTC): \$${btc_formatted} USDT" >> crypto_prices.txt
-        echo "Ethereum (ETH): \$${eth_formatted} USDT" >> crypto_prices.txt
+        echo "Last Updated: $(date -u) UTC" >> crypto_prices.txt
+        echo "Bitcoin (BTC): \$${btc_price} USD" >> crypto_prices.txt
+        echo "Ethereum (ETH): \$${eth_price} USD" >> crypto_prices.txt
 
     - name: Commit and Push
       run: |
