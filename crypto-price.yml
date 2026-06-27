@@ -1,0 +1,39 @@
+name: Update Crypto Prices
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # هر ۶ ساعت یک‌بار اتوماتیک آپدیت می‌شه
+  workflow_dispatch: # دکمه اجرای دستی توی تب Actions
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Fetch BTC and ETH Prices
+      run: |
+        # گرفتن قیمت‌ها از API بایننس
+        btc_price=$(curl -s "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT" | jq -r '.price')
+        eth_price=$(curl -s "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT" | jq -r '.price')
+        
+        # رند کردن قیمت‌ها تا دو رقم اعشار
+        btc_formatted=$(printf "%.2f" $btc_price)
+        eth_formatted=$(printf "%.2f" $eth_price)
+        
+        # نوشتن اطلاعات توی فایل
+        echo "=== Crypto Prices ===" > crypto_prices.txt
+        echo "Last Updated: $(date)" >> crypto_prices.txt
+        echo "Bitcoin (BTC): \$${btc_formatted} USDT" >> crypto_prices.txt
+        echo "Ethereum (ETH): \$${eth_formatted} USDT" >> crypto_prices.txt
+
+    - name: Commit and Push
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add crypto_prices.txt
+        git commit -m "chore: update crypto prices" || echo "No changes to commit"
+        git push
